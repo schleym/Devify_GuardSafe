@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-main: #05070a;
+  --bg-sidebar: #0a0d14;
+  --bg-card: rgba(16, 20, 29, 0.7);
+  --bg-accent: #161b26;
+  
+  --primary: #3b82f6;
+  --primary-glow: rgba(59, 130, 246, 0.5);
+  --secondary: #6366f1;
+  --accent: #06b6d4;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #ffffff;
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  
+  --border: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  color: var(--text-primary);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-accent);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Glassmorphism Classes */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.animate-fade {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.glow-point {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--success);
+  display: inline-block;
+  position: relative;
+}
+
+.glow-point.red {
+  background-color: var(--danger);
+}
+
+.glow-point.red::after {
+  background-color: var(--danger);
+  animation: pulse-red 2s infinite;
+}
+
+.glow-point::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--success);
+  animation: pulse-glow 2s infinite;
+}
+
+/* Utilities */
+.btn {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-success { background: rgba(16, 217, 129, 0.1); color: var(--success) !important; border: 1px solid rgba(16, 217, 129, 0.2); }
+.badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning) !important; border: 1px solid rgba(245, 158, 11, 0.2); }
+.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger) !important; border: 1px solid rgba(239, 68, 68, 0.2); }
