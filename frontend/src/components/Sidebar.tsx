@@ -99,6 +99,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, user, onLo
         <div className="nav-group">
           <span className="nav-label">Administración</span>
           <div 
+            className={`nav-item ${activeView === 'metrics' ? 'active' : ''}`}
+            onClick={() => setActiveView('metrics')}
+          >
+            <span className="nav-icon">📈</span>
+            <span>Métricas</span>
+          </div>
+          <div 
             className={`nav-item ${activeView === 'guards' ? 'active' : ''}`}
             onClick={() => setActiveView('guards')}
           >

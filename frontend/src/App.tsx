@@ -12,12 +12,13 @@ import ReportGenerator from './components/ReportGenerator';
 import UserProfile from './components/UserProfile';
 import Settings from './components/Settings';
 import './App.css';
+import { getStoredUser } from './utils/auth';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState({ name: '', role: '' });
-  
+
   // Settings State
   const [theme, setTheme] = useState('dark');
   const [language, setLanguage] = useState('es');
@@ -25,7 +26,8 @@ const App: React.FC = () => {
 
   // Toast State
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error' | null}>({message: '', type: null});
-  
+  const [notice, setNotice] = useState('');
+
   const notify = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({message, type});
     setTimeout(() => setToast({message: '', type: null}), 3000);
@@ -54,22 +56,31 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
+  // Load persisted login for any role
+  React.useEffect(() => {
+    const stored = getStoredUser();
+    if (stored) {
+      setUser(stored);
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   const handleLogin = (userData: { name: string; role: string }) => {
     setUser(userData);
     setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser({ name: '', role: '' });
     setIsLoggedIn(false);
   };
 
   const renderView = () => {
-    if (user.role === 'Guardia de Seguridad' && activeView === 'dashboard') {
-      return <GuardDashboard />;
-    }
-
     switch (activeView) {
       case 'dashboard':
+        return <GuardDashboard />;
+      case 'metrics':
         return <Dashboard setActiveView={setActiveView} />;
       case 'activities':
         return <ActivityLog notify={notify} />;
@@ -98,7 +109,7 @@ const App: React.FC = () => {
       case 'cctv':
         return <CCTVControl notify={notify} />;
       default:
-        return user.role === 'Guardia de Seguridad' ? <GuardDashboard /> : <Dashboard />;
+        return <GuardDashboard />;
     }
   };
 
@@ -113,6 +124,9 @@ const App: React.FC = () => {
         <Login onLogin={handleLogin} />
       ) : (
         <>
+          {notice && (
+            <div className="alert alert-warning" style={{ marginBottom: '10px' }}>{notice}</div>
+          )}
           <Sidebar activeView={activeView} setActiveView={setActiveView} user={user} onLogout={handleLogout} />
           <main className="main-content">
             <header className="top-header glass">

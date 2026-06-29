@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const GuardDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('actividades');
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
   
   // Determinar turno automáticamente
   const getCurrentShift = () => {
@@ -14,63 +18,177 @@ const GuardDashboard: React.FC = () => {
   const shiftName = getCurrentShift();
   const isDay = new Date().getHours() >= 6 && new Date().getHours() < 20;
 
-  const currentTasks = [
-    { 
-      id: 1, 
-      title: isDay ? 'Control de Romana y Pesaje' : 'Ronda Perimetral Planta Silos', 
-      time: 'En curso', 
-      priority: 'Alta', 
-      zone: isDay ? 'Romana Principal' : 'Sector Silos y Calderas' 
-    },
-    { 
-      id: 2, 
-      title: isDay ? 'Verificación EPP Contratistas' : 'Control de Temperatura de Equipos', 
-      time: 'Pendiente', 
-      priority: 'Media', 
-      zone: isDay ? 'Acceso Peatonal Norte' : 'Planta de Procesos' 
-    },
-    { 
-      id: 3, 
-      title: 'Control de Alcotest Aleatorio', 
-      time: 'Programado 12:00', 
-      priority: 'Alta', 
-      zone: 'Acceso Transporte de Carga' 
-    },
-  ];
+  // Cargar tareas reales de la API de NestJS
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetch('http://localhost:4000/api/tasks', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then(async (data) => {
+        if (Array.isArray(data)) {
+          if (data.length === 0) {
+            // Auto-crear tareas por defecto si está vacío (Seeding inicial para pruebas)
+            const demoTasks = [
+              { title: isDay ? 'Ronda Perimetral Planta Silos' : 'Ronda Perimetral de Noche', description: 'Verificar portones principales y cerraduras secundarias.' },
+              { title: 'Control de Alcotest Aleatorio', description: 'Realizar pruebas aleatorias en la portería de carga.' },
+              { title: 'Verificación EPP Contratistas', description: 'Inspeccionar casco y zapatos de seguridad en el acceso peatonal.' }
+            ];
+
+            const createdTasks = [];
+            for (const t of demoTasks) {
+              const resCreate = await fetch('http://localhost:4000/api/tasks', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(t)
+              });
+              if (resCreate.ok) {
+                const newTask = await resCreate.json();
+                createdTasks.push(newTask);
+              }
+            }
+            setTasks(createdTasks);
+          } else {
+            setTasks(data);
+          }
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error al cargar tareas:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetch('http://localhost:4000/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ title: newTitle, description: newDesc || undefined })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('No se pudo crear la tarea');
+        return res.json();
+      })
+      .then((newTask) => {
+        setTasks((prev) => [newTask, ...prev]);
+        setNewTitle('');
+        setNewDesc('');
+      })
+      .catch((err) => console.error(err));
+  };
+
+  const handleCompleteTask = (id: number) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetch(`http://localhost:4000/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ completed: true })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('No se pudo completar la tarea');
+        return res.json();
+      })
+      .then(() => {
+        // Eliminar o marcar como completado. Vamos a filtrarla de la lista
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+      })
+      .catch((err) => console.error(err));
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'actividades':
         return (
           <div className="task-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {currentTasks.map((task) => (
-              <div key={task.id} className="glass-card" style={{ padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.03), transparent)' }}>
-                <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
-                  <div style={{ 
-                    width: '60px', 
-                    height: '60px', 
-                    borderRadius: '16px', 
-                    background: 'var(--bg-accent)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontSize: '1.5rem',
-                    border: '1px solid var(--border)',
-                    boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)'
-                  }}>
-                    {task.priority === 'Alta' ? '🔥' : '📋'}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '1.2rem', marginBottom: '4px' }}>{task.title}</div>
-                    <div style={{ fontSize: '0.9rem', color: '#cbd5e1', display: 'flex', gap: '15px' }}>
-                      <span>📍 {task.zone}</span>
-                      <span>🕒 {task.time}</span>
+            {/* Formulario para agregar tarea */}
+            <form onSubmit={handleAddTask} className="glass-card" style={{ padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ flex: 1 }}>
+                <input 
+                  type="text" 
+                  placeholder="Nueva Tarea (ej: Ronda Perimetral)" 
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="input-field"
+                  style={{ margin: 0, padding: '10px 14px' }}
+                  required
+                />
+              </div>
+              <div style={{ flex: 2 }}>
+                <input 
+                  type="text" 
+                  placeholder="Descripción (ej: Verificar portón norte)" 
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className="input-field"
+                  style={{ margin: 0, padding: '10px 14px' }}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: '10px' }}>
+                ➕ Agregar
+              </button>
+            </form>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Cargando tareas...</div>
+            ) : tasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>No tienes tareas asignadas.</div>
+            ) : (
+              tasks.map((task) => (
+                <div key={task.id} className="glass-card" style={{ padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: task.completed ? 'rgba(16, 185, 129, 0.05)' : 'linear-gradient(135deg, rgba(255,255,255,0.03), transparent)' }}>
+                  <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '50px', 
+                      height: '50px', 
+                      borderRadius: '12px', 
+                      background: task.completed ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-accent)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      fontSize: '1.2rem',
+                      border: '1px solid var(--border)',
+                      color: task.completed ? 'var(--success)' : 'inherit'
+                    }}>
+                      {task.completed ? '✅' : '📋'}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: '1.1rem', marginBottom: '4px', textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'var(--text-muted)' : 'inherit' }}>{task.title}</div>
+                      <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                        {task.description || 'Sin descripción'}
+                      </div>
                     </div>
                   </div>
+                  {!task.completed && (
+                    <button 
+                      onClick={() => handleCompleteTask(task.id)}
+                      className="btn" 
+                      style={{ padding: '10px 20px', fontSize: '0.85rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                    >
+                      Completar
+                    </button>
+                  )}
                 </div>
-                <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem', borderRadius: '10px' }}>Marcar como Listado</button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         );
       

@@ -32,21 +32,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return;
     }
 
-    // Simulación de carga
+    // Inicio de sesión real mediante API
     const btn = e.currentTarget.querySelector('button');
     if (btn) btn.innerHTML = 'Verificando...';
 
-    setTimeout(() => {
-      // Credenciales predefinidas
-      if (email === 'admin@gmail.com' && password === 'admin1234') {
-        onLogin({ name: 'Administrador Principal', role: 'Administrador' });
-      } else if (email === 'guardia@gmail.com' && password === 'guardia1234') {
-        onLogin({ name: 'Juan Guardia', role: 'Guardia de Seguridad' });
-      } else {
-        setError('Credenciales incorrectas. Intente de nuevo.');
+    fetch('http://localhost:4000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || 'Credenciales incorrectas. Intente de nuevo.');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        localStorage.setItem('token', data.access_token);
+        onLogin({ name: data.user.name, role: data.user.role });
+      })
+      .catch((err) => {
+        setError(err.message || 'Error al conectar con el servidor.');
         if (btn) btn.innerHTML = 'Iniciar Sesión';
-      }
-    }, 1000);
+      });
   };
 
   return (
